@@ -37,6 +37,7 @@ def mainlist(item):
     itemlist.append( Item(channel=__channel__, title="Peliculas VOSE" , action="peliculas", url="http://www.elitetorrent.net/categoria/14/peliculas-vose/modo:mini"))
     itemlist.append( Item(channel=__channel__, title="Series"         , action="peliculas", url="http://www.elitetorrent.net/categoria/4/series/modo:mini"))
     itemlist.append( Item(channel=__channel__, title="Series VOSE"    , action="peliculas", url="http://www.elitetorrent.net/categoria/16/series-vose/modo:mini"))
+    itemlist.append( Item(channel=__channel__, title="Buscar"         , action="search"   , url="http://www.elitetorrent.net/busqueda/%s/modo:mini"))
 
     return itemlist
 
@@ -95,3 +96,21 @@ def play(item):
     itemlist.append( Item(channel=__channel__, action="play", server="torrent", title=item.title , url=link , thumbnail=item.thumbnail , plot=item.plot , folder=False) )
 
     return itemlist
+	
+def search(item, texto):
+    logger.info("[elitetorrent.py] search")
+    itemlist = []
+
+    try:
+        item.url = item.url % texto
+        item.extra = ""
+        itemlist.extend(peliculas(item))
+        itemlist = sorted(itemlist, key=lambda Item: Item.title) 
+
+        return itemlist
+
+    except:
+        import sys
+        for line in sys.exc_info():
+            logger.error( "%s" % line )
+        return []
