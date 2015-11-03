@@ -6,20 +6,33 @@
 # by DrZ3r0
 # ------------------------------------------------------------
 
-import re
-
+import re, urllib2, cookielib, xbmc, os
 from core import scrapertools
 from core import logger
-from lib.parser import cParser
-from lib.jjdecode import JJDecoder
-from lib.packer import cPacker
-from lib.aadecode import AADecoder
+from core import config
 
-headers = [
-    ['User-Agent', 'Mozilla/5.0 (Windows NT 6.1; rv:38.0) Gecko/20100101 Firefox/38.0'],
-    ['Accept-Encoding', 'gzip, deflate'],
-    ['Connection', 'keep-alive']
-]
+           
+headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+       'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+       'Accept-Encoding': 'none',
+       'Accept-Language': 'en-US,en;q=0.8',
+       'Connection': 'keep-alive'}
+
+ficherocookies = os.path.join( config.get_data_path(), 'cookies.dat' )
+cj = cookielib.MozillaCookieJar()
+urlopen = urllib2.urlopen
+Request = urllib2.Request
+
+
+if cj != None:
+    if os.path.isfile(xbmc.translatePath(ficherocookies)):
+        cj.load(xbmc.translatePath(ficherocookies))
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+else:
+    opener = urllib2.build_opener()
+
+urllib2.install_opener(opener)
 
 
 def test_video_exists(page_url):
@@ -33,106 +46,54 @@ def test_video_exists(page_url):
     return True, ""
 
 
-def __decode_O(html):
+def decodeOpenLoad(html):
 
-	oParser = cParser()
-	string = ''
-   
-	#"aaencode - Encode any JavaScript program to Japanese style emoticons (^_^)"
-	sPattern = "<video(?:.|\s)*?<script\s[^>]*?>((?:.|\s)*?)<\/script"
-	aResult = oParser.parse(html, sPattern)
-	if (aResult[0] == True):
-		string = AADecoder(aResult[1][0]).decode()
-			
-	if not (string): 
-		#Dean Edwards Packer
-		sPattern = "(\s*eval\s*\(\s*function(?:.|\s)+?)<\/script>"
-		aResult = oParser.parse(html, sPattern)
-		if (aResult[0] == True):
-			from lib.jsbeautifier.unpackers import packer
-			sUnpacked = packer.unpack(aResult[1][0])
-			string = JJDecoder(sUnpacked).decode()
-	
-	
-	if (string):
-		sContent = string.replace('\\','')
+    aastring = re.search(r"<video(?:.|\s)*?<script\s[^>]*?>((?:.|\s)*?)</script", html, re.DOTALL | re.IGNORECASE).group(1)
+    
+    aastring = aastring.replace("((ﾟｰﾟ) + (ﾟｰﾟ) + (ﾟΘﾟ))", "9")
+    aastring = aastring.replace("((ﾟｰﾟ) + (ﾟｰﾟ))","8")
+    aastring = aastring.replace("((ﾟｰﾟ) + (o^_^o))","7")
+    aastring = aastring.replace("((o^_^o) +(o^_^o))","6")
+    aastring = aastring.replace("((ﾟｰﾟ) + (ﾟΘﾟ))","5")
+    aastring = aastring.replace("(ﾟｰﾟ)","4")
+    aastring = aastring.replace("((o^_^o) - (ﾟΘﾟ))","2")
+    aastring = aastring.replace("(o^_^o)","3")
+    aastring = aastring.replace("(ﾟΘﾟ)","1")
+    aastring = aastring.replace("(c^_^o)","0")
+    aastring = aastring.replace("(ﾟДﾟ)[ﾟεﾟ]","\\")
+    aastring = aastring.replace("(3 +3 +0)","6")
+    aastring = aastring.replace("(3 - 1 +0)","2")
+    aastring = aastring.replace("(1 -0)","1")
+    aastring = aastring.replace("(4 -0)","4")
 
-		sPattern = 'src=\s*?"(.*?)\?'
-		aResult = oParser.parse(sContent, sPattern)
+    decodestring = re.search(r"\\\+([^(]+)", aastring, re.DOTALL | re.IGNORECASE).group(1)
+    decodestring = "\\+"+ decodestring
+    decodestring = decodestring.replace("+","")
+    decodestring = decodestring.replace(" ","")
+    
+    decodestring = decode(decodestring)
+    decodestring = decodestring.replace("\\/","/")
+    
+    videourl = re.search(r'vr="([^"]+)', decodestring, re.DOTALL | re.IGNORECASE).group(1)
+    return videourl
 
-	return aResult[1][0]
-
-    # match = re.search('>\s*(eval\(function.*?)</script>', html, re.DOTALL)
-    # if match:
-        # from lib.jsbeautifier.unpackers import packer
-        # html = packer.unpack(match.group(1))
-        # #html = html.replace('\\\\', '\\')
-
-    # match = re.search('(l=.*?)(?:$|</script>)', html, re.DOTALL)
-    # if match:
-        # s = match.group(1)
-
-        # O = {
-            # '___': 0,
-            # '$$$$': "f",
-            # '__$': 1,
-            # '$_$_': "a",
-            # '_$_': 2,
-            # '$_$$': "b",
-            # '$$_$': "d",
-            # '_$$': 3,
-            # '$$$_': "e",
-            # '$__': 4,
-            # '$_$': 5,
-            # '$$__': "c",
-            # '$$_': 6,
-            # '$$$': 7,
-            # '$___': 8,
-            # '$__$': 9,
-            # '$_': "constructor",
-            # '$$': "return",
-            # '_$': "o",
-            # '_': "u",
-            # '__': "t",
-        # }
-        # match = re.search('l\.\$\(l\.\$\((.*?)\)\(\)\)\(\);', s)
-        # if match:
-            # s1 = match.group(1)
-            # s1 = s1.replace(' ', '')
-            # s1 = s1.replace('(![]+"")', 'false')
-            # s3 = ''
-            # for s2 in s1.split('+'):
-                # if s2.startswith('l.'):
-                    # s3 += str(O[s2[2:]])
-                # elif '[' in s2 and ']' in s2:
-                    # key = s2[s2.find('[') + 3:-1]
-                    # s3 += s2[O[key]]
-                # else:
-                    # s3 += s2[1:-1]
-
-            # s3 = s3.replace('\\\\', '\\')
-            # s3 = s3.decode('unicode_escape')
-            # s3 = s3.replace('\\/', '/')
-            # s3 = s3.replace('\\\\"', '"')
-            # s3 = s3.replace('\\"', '"')
-
-            # print s3
-
-            # match = re.search(r'attr\("href",\s*"([^"]+)"', s3)
-            # if match:
-                # return match.group(1)
+def decode(encoded):
+    for octc in (c for c in re.findall(r'\\(\d{2,3})', encoded)):
+        encoded = encoded.replace(r'\%s' % octc, chr(int(octc, 8)))
+    return encoded.decode('utf8')
 
 
 def get_video_url(page_url, premium=False, user="", password="", video_password=""):
     logger.info("[openload.py] url=" + page_url)
     video_urls = []
-
-    data = scrapertools.cache_page(page_url, headers=headers)
-
-    # URL del vídeo
-    url = __decode_O(data)
+	
+    req = Request(page_url, '', headers)
+    response = urlopen(req, timeout=60)
+    data = response.read()
+    cj.save(ficherocookies)
+    response.close()
+    url = decodeOpenLoad(data)
     video_urls.append([".mp4" + " [Openload]", url])
-
     return video_urls
 
 
@@ -148,7 +109,7 @@ def find_videos(text):
 
     for media_id in matches:
         titulo = "[Openload]"
-        url = 'http://openload.co/f/%s' % media_id
+        url = 'https://openload.co/embed/%s/' % media_id
         if url not in encontrados:
             logger.info("  url=" + url)
             devuelve.append([titulo, url, 'openload'])
