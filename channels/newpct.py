@@ -32,6 +32,8 @@ def mainlist(item):
     itemlist = []
     itemlist.append( Item(channel=__channel__, action="submenu" , title="Películas", url="http://www.newpct.com/include.inc/load.ajax/load.topbar.php?userName=", extra="Peliculas" ))
     itemlist.append( Item(channel=__channel__, action="submenu" , title="Series"   , url="http://www.newpct.com/include.inc/load.ajax/load.topbar.php?userName=", extra="Series" ))
+    itemlist.append( Item(channel=__channel__, action="listado" , title="Anime"   , url="http://www.newpct.com/anime/", extra="" ))
+    itemlist.append( Item(channel=__channel__, action="listado" , title="Documentales"   , url="http://www.newpct.com/documentales/", extra="" ))
     itemlist.append( Item(channel=__channel__, action="search"    , title="Buscar" ))
   
     return itemlist
@@ -94,37 +96,20 @@ def submenu(item):
     logger.info("[newpct.py] peliculas")
     itemlist=[]
     
-    data = scrapertools.cache_page(item.url)
-
-    '''
-    <li><a href="#" rel="nofollow" class="dir" title="Descargar Peliculas Gratis">Peliculas<img src="http://www.newpct.com/sections.inc/top.column.inc/topmenu.inc/images/arows.png" alt="Descargas Torrent"></a>
-    <ul>
-    <li><a href="http://www.newpct.com/peliculas-castellano/peliculas-rip/" title="Descargar Peliculas en Castellano DVDRIP" >Peliculas DVDRIP-BRRIP Castellano</a></li>
-    <li><a href="http://www.newpct.com/peliculas-latino/" title="Descargar Peliculas Latino Gratis">Peliculas Latino</a></li>
-    <li><a href="http://www.newpct.com/peliculas-castellano/estrenos-de-cine/" title="Descargar Estrenos de Cine Gratis">Estrenos de Cine Castellano</a></li>
-    <li><a href="http://www.newpct.com/cine-alta-definicion-hd/" title="Descargar Peliculas en HD, Alta Definicion Gratis">Peliculas Alta Definicion HD</a></li>
-    <li><a href="http://www.newpct.com/peliculas-en-3d-hd/" title="Descargar Peliculas en 3D HD" >Peliculas en 3D HD</a></li>
-    <li><a href="http://www.newpct.com/peliculas-castellano/peliculas-dvd/" title="Descargar Peliculas DVD FULL">Peliculas DVDFULL</a></li>
-    <li><a href="http://www.newpct.com/peliculas-vo/" title="Descargar Peliculas en V.O Subtituladas">Peliculas V.O.Subtituladas</a></li>
-    <li><a href="http://www.newpct.com/anime/" title="Descargar Series y Peliculas Anime Gratis">Anime</a></li>
-    <li><a href="http://www.newpct.com/documentales/" title="Descargar Documentales Gratis">Documentales</a></li>
-    </ul>
-    </li>
-    '''
-    data = scrapertools.get_match(data,'<a href="\#" rel="nofollow" class="dir" title="Descargar '+item.extra+' Gratis">'+item.extra+'(.*?)</ul>')
-
-    patron = '<li><a href="([^"]+)"[^>]+>([^<]+)</a></li>'
-    matches = re.compile(patron,re.DOTALL).findall(data)    
-
-    for scrapedurl,scrapedtitle in matches:
-        title = scrapedtitle.strip()
-        url = urlparse.urljoin(item.url,scrapedurl)
-        thumbnail = ""
-        plot = ""
-        if (DEBUG): logger.info("title=["+title+"], url=["+url+"], thumbnail=["+thumbnail+"]")
-
-        itemlist.append( Item(channel=__channel__, action="listado" , title=title , url=url, thumbnail=thumbnail, plot=plot))
-    
+    if item.extra == "Peliculas":
+		itemlist.append( Item(channel=__channel__, action="listado" , title="Peliculas DVDRIP-BRRIP Castellano" , url="http://www.newpct.com/peliculas-castellano/peliculas-rip/"))
+		itemlist.append( Item(channel=__channel__, action="listado" , title="Peliculas Latino" , url="http://www.newpct.com/peliculas-latino/"))
+		itemlist.append( Item(channel=__channel__, action="listado" , title="Estrenos de Cine Castellano" , url="http://www.newpct.com/peliculas-castellano/estrenos-de-cine/"))
+		itemlist.append( Item(channel=__channel__, action="listado" , title="Peliculas Alta Definicion HD" , url="http://www.newpct.com/cine-alta-definicion-hd/"))
+		itemlist.append( Item(channel=__channel__, action="listado" , title="Peliculas en 3D HD" , url="http://www.newpct.com/peliculas-en-3d-hd/"))
+		itemlist.append( Item(channel=__channel__, action="listado" , title="Peliculas DVDFULL" , url="http://www.newpct.com/peliculas-castellano/peliculas-dvd/"))
+		itemlist.append( Item(channel=__channel__, action="listado" , title="Peliculas V.O.Subtituladas" , url="http://www.newpct.com/peliculas-vo/"))
+    else:
+		itemlist.append( Item(channel=__channel__, action="listado" , title="HDTV Castellano" , url="http://www.newpct.com/series/"))
+		itemlist.append( Item(channel=__channel__, action="listado" , title="Miniseries Castellano" , url="http://www.newpct.com/miniseries-es/" ))
+		itemlist.append( Item(channel=__channel__, action="listado" , title="Series TV - V.O.S.E" , url="http://www.newpct.com/series-vo/"))
+		itemlist.append( Item(channel=__channel__, action="listado" , title="Últimos Capítulos HD" , url="http://www.newpct.com/series-alta-definicion-hd/"))
+		itemlist.append( Item(channel=__channel__, action="series" , title="Series HD [A-Z]" , url="http://www.newpct.com/index.php?l=torrentListByCategory&subcategory_s=1469&more=listar"))
     return itemlist
 
 def listado(item):
@@ -276,6 +261,51 @@ def listado(item):
     itemlist.append( Item(channel=__channel__, action="listado" , title=">> Página siguiente" , url=url_next_page, extra=bloque))
 
     return itemlist
+
+	
+def series(item):
+    logger.info("[newpct.py] series")
+    itemlist=[]
+    #Lista menú Series de la A-Z
+    data = scrapertools.cache_page(item.url)
+    patron = '<div id="content-abc">(.*?)<\/div>'
+    data = re.compile(patron,re.DOTALL|re.M).findall(data)
+    patron = 'id="([^"]+)".*?>([^"]+)<\/a>'
+    matches = re.compile(patron,re.DOTALL|re.M).findall(data[0])
+    for id, scrapedtitle in matches:
+        url_base = "http://www.newpct.com/include.inc/ajax.php/orderCategory.php?type=letter&leter=%s&sql=SELECT+DISTINCT+++%09%09%09%09%09%09torrentID%2C+++%09%09%09%09%09%09torrentCategoryID%2C+++%09%09%09%09%09%09torrentCategoryIDR%2C+++%09%09%09%09%09%09torrentImageID%2C+++%09%09%09%09%09%09torrentName%2C+++%09%09%09%09%09%09guid%2C+++%09%09%09%09%09%09torrentShortName%2C++%09%09%09%09%09%09torrentLanguage%2C++%09%09%09%09%09%09torrentSize%2C++%09%09%09%09%09%09calidad+as+calidad_%2C++%09%09%09%09%09%09torrentDescription%2C++%09%09%09%09%09%09torrentViews%2C++%09%09%09%09%09%09rating%2C++%09%09%09%09%09%09n_votos%2C++%09%09%09%09%09%09vistas_hoy%2C++%09%09%09%09%09%09vistas_ayer%2C++%09%09%09%09%09%09vistas_semana%2C++%09%09%09%09%09%09vistas_mes%2C+%09%09%09%09%09%09imagen++%09%09%09%09++FROM+torrentsFiles+as+t+WHERE++%28torrentStatus+%3D+1+OR+torrentStatus+%3D+2%29++AND+%28torrentCategoryID+IN+%281951%2C+2075%2C+1772%2C+1582%2C+1859%2C+1473%2C+1987%2C+1708%2C+1474%2C+2013%2C+1603%2C+2195%2C+2244%2C+1596%2C+2113%2C+1611%2C+1959%2C+1999%2C+2236%2C+2191%2C+1693%2C+1699%2C+2116%2C+1759%2C+2134%2C+1985%2C+2159%2C+1940%2C+1769%2C+2251%2C+2193%2C+1598%2C+2263%2C+1514%2C+1923%2C+1605%2C+1585%2C+2240%2C+2238%2C+2177%2C+2174%2C+1472%2C+2272%2C+1983%2C+2140%2C+1919%2C+1754%2C+1689%2C+1791%2C+1475%2C+1687%2C+2010%2C+1649%2C+2155%2C+2111%2C+1643%2C+1476%2C+2197%2C+1885%2C+1486%2C+2101%2C+1618%2C+1977%2C+1490%2C+2202%2C+2243%2C+2118%2C+1657%2C+1898%2C+2148%2C+1907%2C+2131%2C+1606%2C+1498%2C+1896%2C+2172%2C+2128%2C+1493%2C+1939%2C+1912%2C+1639%2C+2241%2C+1488%2C+1961%2C+2255%2C+2234%2C+1684%2C+1505%2C+1691%2C+1957%2C+1495%2C+1624%2C+2232%2C+1470%2C+1971%2C+2283%2C+2089%2C+1746%2C+2267%2C+1676%2C+1629%2C+1511%2C+2219%2C+1748%2C+1677%2C+1484%2C+1485%2C+2037%2C+1580%2C+2162%2C+2067%2C+1763%2C+1744%2C+1481%2C+1520%2C+2248%2C+1990%2C+2199%2C+2153%2C+1696%2C+2282%2C+2185%2C+1492%2C+1508%2C+1727%2C+2246%2C+2261%2C+2073%2C+2151%2C+2247%2C+2274%2C+2033%2C+2176%2C+1711%2C+2257%2C+1929%2C+2092%2C+1931%2C+1579%2C+2184%2C+1489%2C+2035%2C+2190%2C+2280%2C+2216%2C+1706%2C+2028%2C+2230%2C+2063%2C+2165%2C+1757%2C+1487%2C+1583%2C+2188%2C+2179%2C+2047%2C+2030%2C+2225%2C+2144%2C+2167%2C+1477%2C+2259%2C+2285%2C+1701%2C+1518%2C+1526%2C+1844%2C+1654%2C+1916%2C+1694%2C+1491%2C+2249%2C+1478%2C+1949%2C+1681%2C+1887%2C+1714%2C+2271%2C+1668%2C+2171%2C+1910%2C+2269%2C+2133%2C+1619%2C+1581%2C+2239%2C+2265%2C+1904%2C+1875%2C+2253%2C+1864%2C+1846%2C+1927%2C+2106%2C+2276%2C+2157%2C+1479%2C+1981%2C+1483%2C+2136%2C+2044%2C+2277%2C+1500%2C+1729%2C+1809%2C+1584%2C+1740%2C+2187%2C+2127%2C+1925%2C+1602%2C+2078%2C+2169%2C+2183%2C+1646%2C+1656%2C+2065%2C+2182%2C+1471%2C+2181%2C+1469%29%29++AND+home_active+%3D+0++++ORDER+BY+torrentDateAdded++DESC++LIMIT+0%2C+50&pag=&tot=&ban=3&cate=1469"
+        scrapedurl = url_base.replace("%s", id)
+        itemlist.append( Item(channel=__channel__, action="listaseries" , title=scrapedtitle , url=scrapedurl, folder=True))
+
+    return itemlist
+	
+def listaseries(item):
+    logger.info("[newpct.py] listaseries")
+    itemlist=[]
+
+    data = scrapertools.cache_page(item.url)
+    patron = "<li>.*?<a href='([^']+)'>.*?<img src='([^']+)'.*?<h3>([^']+)<\/h3>"
+    matches = re.compile(patron,re.DOTALL|re.M).findall(data)
+    for scrapedurl, scrapedthumbnail, scrapedtitle in matches:
+        itemlist.append( Item(channel=__channel__, action="episodios" , title=scrapedtitle , url=scrapedurl, thumbnail=scrapedthumbnail, folder=True))
+
+    return itemlist
+
+def episodios(item):
+    logger.info("[newpct.py] episodios")
+    itemlist=[]
+	
+    data = scrapertools.cache_page(item.url)
+    patron = "<ul style='display:none;'.*?>(.*?)<\/ul>"
+    data = re.compile(patron,re.DOTALL|re.M).findall(data)
+    patron = "<a href='([^']+)'.*?title='([^']+)'"
+    for index in range(len(data)):
+            matches = re.compile(patron,re.DOTALL|re.M).findall(data[index])
+            for scrapedurl, scrapedtitle in matches:
+                itemlist.append( Item(channel=__channel__, action="findvideos" , title=scrapedtitle , url=scrapedurl, thumbnail=item.thumbnail, folder=True))
+
+    return itemlist
+	
 
 def findvideos(item):
     logger.info("[newpct.py] findvideos")
