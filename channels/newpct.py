@@ -108,7 +108,7 @@ def submenu(item):
 		itemlist.append( Item(channel=__channel__, action="listado" , title="HDTV Castellano" , url="http://www.newpct.com/series/"))
 		itemlist.append( Item(channel=__channel__, action="listado" , title="Miniseries Castellano" , url="http://www.newpct.com/miniseries-es/" ))
 		itemlist.append( Item(channel=__channel__, action="listado" , title="Series TV - V.O.S.E" , url="http://www.newpct.com/series-vo/"))
-		itemlist.append( Item(channel=__channel__, action="listado" , title="Últimos Capítulos HD" , url="http://www.newpct.com/series-alta-definicion-hd/"))
+		itemlist.append( Item(channel=__channel__, action="listado" , title="Últimos Capítulos HD" , url="http://www.newpct.com/series-alta-definicion-hd/", category="HD"))
 		itemlist.append( Item(channel=__channel__, action="series" , title="Series HD [A-Z]" , url="http://www.newpct.com/index.php?l=torrentListByCategory&subcategory_s=1469&more=listar"))
     return itemlist
 
@@ -161,8 +161,10 @@ def listado(item):
         plot = unicode( plot, "iso-8859-1" , errors="replace" ).encode("utf-8")
 
         if (DEBUG): logger.info("title=["+title+"], url=["+url+"], thumbnail=["+thumbnail+"]")
-
-        itemlist.append( Item(channel=__channel__, action="findvideos" , title=title , url=url, thumbnail=thumbnail, plot=plot, viewmode="movie_with_plot"))
+        if item.category == "HD":
+            itemlist.append( Item(channel=__channel__, action="episodios" , title=title , url=url, thumbnail=thumbnail, plot=plot, viewmode="movie_with_plot"))
+        else:
+            itemlist.append( Item(channel=__channel__, action="findvideos" , title=title , url=url, thumbnail=thumbnail, plot=plot, viewmode="movie_with_plot"))
 
     # Página siguiente
     '''
@@ -258,7 +260,10 @@ def listado(item):
     #http://www.newpct.com/include.inc/ajax.php/orderCategory.php?type=todo&leter=&sql=SELECT+DISTINCT+++%09%09%09%09%09%09torrentID%2C+++%09%09%09%09%09%09torrentCategoryID%2C+++%09%09%09%09%09%09torrentCategoryIDR%2C+++%09%09%09%09%09%09torrentImageID%2C+++%09%09%09%09%09%09torrentName%2C+++%09%09%09%09%09%09guid%2C+++%09%09%09%09%09%09torrentShortName%2C++%09%09%09%09%09%09torrentLanguage%2C++%09%09%09%09%09%09torrentSize%2C++%09%09%09%09%09%09calidad+as+calidad_%2C++%09%09%09%09%09%09torrentDescription%2C++%09%09%09%09%09%09torrentViews%2C++%09%09%09%09%09%09rating%2C++%09%09%09%09%09%09n_votos%2C++%09%09%09%09%09%09vistas_hoy%2C++%09%09%09%09%09%09vistas_ayer%2C++%09%09%09%09%09%09vistas_semana%2C++%09%09%09%09%09%09vistas_mes++%09%09%09%09++FROM+torrentsFiles+as+t+WHERE++(torrentStatus+%3D+1+OR+torrentStatus+%3D+2)++AND+(torrentCategoryID+IN+(1537%2C+758%2C+1105%2C+760%2C+1225))++++ORDER+BY+torrentDateAdded++DESC++LIMIT+0%2C+50&pag=3&tot=&ban=3&cate=1225
     url_next_page = base_url + "?" + urllib.urlencode( { "type":param_type, "leter":param_leter, "sql":param_sql, "pag":param_pag, "tot":param_tot, "ban":param_ban, "cate":param_cate } )
     logger.info("url_next_page="+url_next_page)
-    itemlist.append( Item(channel=__channel__, action="listado" , title=">> Página siguiente" , url=url_next_page, extra=bloque))
+    if item.category == "HD":
+        itemlist.append( Item(channel=__channel__, action="listado" , title=">> Página siguiente" , url=url_next_page, extra=bloque, category="HD"))
+    else:
+        itemlist.append( Item(channel=__channel__, action="listado" , title=">> Página siguiente" , url=url_next_page, extra=bloque))
 
     return itemlist
 
@@ -284,11 +289,11 @@ def listaseries(item):
     itemlist=[]
 
     data = scrapertools.cache_page(item.url)
-    patron = "<li>.*?<a href='([^']+)'>.*?<img src='([^']+)'.*?<h3>([^']+)<\/h3>"
+    logger.info(data)
+    patron = "<li[^<]+<a href='([^']+)'>.*?<img src='([^']+)'.*?<h3>([^']+)<\/h3>"
     matches = re.compile(patron,re.DOTALL|re.M).findall(data)
     for scrapedurl, scrapedthumbnail, scrapedtitle in matches:
         itemlist.append( Item(channel=__channel__, action="episodios" , title=scrapedtitle , url=scrapedurl, thumbnail=scrapedthumbnail, folder=True))
-
     return itemlist
 
 def episodios(item):
