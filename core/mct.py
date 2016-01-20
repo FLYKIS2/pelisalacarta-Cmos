@@ -171,7 +171,7 @@ def play(url, is_view=None):
             piece_set.append([i,_set])
 
     for i in range(0,5):
-        h.set_piece_deadline(piece_set[i][0],15000,lt.deadline_flags.alert_when_available)
+        h.set_piece_deadline(piece_set[i][0],10000,lt.deadline_flags.alert_when_available)
     for i in range(5,len(piece_set)-5):
         h.piece_priority( piece_set[i][0], 0 )
         piece_set[i][1] = 0
