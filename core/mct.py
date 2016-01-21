@@ -168,15 +168,14 @@ def play(url, is_view=None):
     piece_set = []
     for i, _set in enumerate(h.piece_priorities()):
         if _set == 1:
-            piece_set.append([i,_set])
+            piece_set.append(i)
 
     for i in range(0,5):
-        h.set_piece_deadline(piece_set[i][0],10000,lt.deadline_flags.alert_when_available)
+        h.set_piece_deadline(piece_set[i],10000,lt.deadline_flags.alert_when_available)
     for i in range(5,len(piece_set)-5):
-        h.piece_priority( piece_set[i][0], 0 )
-        piece_set[i][1] = 0
+        h.piece_priority( piece_set[i], 0 )
     for i in range(len(piece_set)-5,len(piece_set)):
-        h.set_piece_deadline(piece_set[i][0],10000,lt.deadline_flags.alert_when_available)
+        h.set_piece_deadline(piece_set[i],10000,lt.deadline_flags.alert_when_available)
 
     print "#### h.file_priorities() ## %s ##" % h.file_priorities()
     print "#### h.piece_priorities() ## %s ##" % h.piece_priorities()
@@ -196,17 +195,15 @@ def play(url, is_view=None):
     # -- Descarga - Primer bucle                                -
     while not h.is_seed():
         s = h.status()
+        #Actualizar piezas en caso de reanudación del torrent
         if s.is_finished == True : update_piece(h, piece_set)
         alert = ses.pop_alert()
         while alert is not None:
             alert_type = type(alert).__name__
-            #Comprueba si la alerta proviene del deadline y si ya ha terminado de descargar
-			#todas las piezas con prioridad distinta de 0
             if (alert_type == 'read_piece_alert') & (s.is_finished) == True:
                 update_piece(h, piece_set)
                 alert = ses.pop_alert()
             else: break
-        xbmc.sleep(100)
 
         # -- Recuperar los datos del progreso -------------------
         message, porcent, msg_file, s, download = getProgress(h, video_file, video_size)
@@ -241,7 +238,8 @@ def play(url, is_view=None):
             print "##### porcentage_to_play ## %s ##" % porcentage_to_play
             is_view = "Ok"
             dp.close()
-
+			#Colocar las restantes piezas a 1 antes de comenzar la reproduccion
+            update_piece(h, piece_set)
             # -- Player - Ver el vídeo --------------------------
             player = play_video()
             player.play( os.path.join( save_path_videos, video_file ) )
@@ -329,21 +327,21 @@ def getProgress(h, video_file, video_size=0):
     state_str = ['queued', 'checking', 'downloading metadata', \
         'downloading', 'finished', 'seeding', 'allocating', 'checking fastresume']
 
+    if "/" in video_file: video_file = video_file.split("/")[1]
     if video_size != 0:
         porcent = int( (float(s.total_done)/video_size) * 100 )
         download = ( (float(s.total_done)/video_size) * 100 )
         message = '%.2f%% d:%.1f kb/s u:%.1f kB/s p:%d s:%d %s' % \
             ((float(s.total_done)/video_size) * 100, s.download_rate / 1000, s.upload_rate / 1000, \
             s.num_peers, s.num_seeds, state_str[s.state])
+        msg_file = "..../"+video_file + " (%.2f)" % (video_size/1048576.0)
     else:
         porcent = int( s.progress * 100 )
         download = ( s.progress * 100 )
         message = '%.2f%% d:%.1f kb/s u:%.1f kB/s p:%d s:%d %s' % \
             (s.progress * 100, s.download_rate / 1000, s.upload_rate / 1000, \
             s.num_peers, s.num_seeds, state_str[s.state])
-
-    if "/" in video_file: video_file = video_file.split("/")[1]
-    msg_file = "..../"+video_file + " (%.2f)" % (s.total_wanted/1048576.0)
+        msg_file = "..../"+video_file + " (%.2f)" % (s.total_wanted/1048576.0)
 
     return (message, porcent, msg_file, s, download)
 
@@ -507,10 +505,9 @@ def url_get(url, params={}, headers={}):
         return None
 
 def update_piece(h, piece_set):
-    count = 0
     for i, _set in enumerate(piece_set):
-        if (_set[1] == 0) & (count < 5):
-            h.set_piece_deadline(i,10000,lt.deadline_flags.alert_when_available)
-            print "#### h.piece_priorities() ## %s ##" % h.piece_priorities()
-            count += 1
-        elif count == 5: return
+        prioridad = h.piece_priority(piece_set[_set])
+        if (prioridad == 0) :
+            h.piece_priority(piece_set[_set],1)
+            h.set_sequential_download(True)
+    return
