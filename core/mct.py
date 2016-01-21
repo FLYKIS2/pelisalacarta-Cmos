@@ -20,6 +20,12 @@ from platformcode import library
 from core import scrapertools
 from core import config
 
+# -- Añadido: Para log ------------------------------------------
+import time
+
+# -- Añadido: Global con el número de piezas para el cluster ----
+__pieces__ = 10
+
 def play(url, is_view=None):
 
     # -- ------------------------------------------------------ -
@@ -168,14 +174,30 @@ def play(url, is_view=None):
     piece_set = []
     for i, _set in enumerate(h.piece_priorities()):
         if _set == 1:
+            # -- Modificado: Paso atrás para dejarlo como antes -
+            #piece_set.append([i,_set])
             piece_set.append(i)
 
-    for i in range(0,5):
-        h.set_piece_deadline(piece_set[i],10000,lt.deadline_flags.alert_when_available)
-    for i in range(5,len(piece_set)-5):
-        h.piece_priority( piece_set[i], 0 )
-    for i in range(len(piece_set)-5,len(piece_set)):
-        h.set_piece_deadline(piece_set[i],10000,lt.deadline_flags.alert_when_available)
+    #-- Mofificado: Cambio literal por global por si deseamos ---
+    #-- modificar el número de piezas por cluster               -
+    #for i in range(0,5):
+    for i in range(0,__pieces__):
+        #-- Mofificado: Paso atrás sin alertas ------------------
+        #h.set_piece_deadline(piece_set[i][0],10000,lt.deadline_flags.alert_when_available)
+        h.set_piece_deadline(piece_set[i],10000)
+
+    #-- Eliminado: Aprobechar ancho de banda --------------------
+    #for i in range(5,len(piece_set)-5):
+    #    h.piece_priority( piece_set[i][0], 0 )
+    #    piece_set[i][1] = 0
+
+    #-- Mofificado: Cambio literal por global por si deseamos ---
+    #-- modificar el número de piezas por cluster               -
+    #for i in range(len(piece_set)-5,len(piece_set)):
+    for i in range(len(piece_set)-__pieces__,len(piece_set)):
+        #-- Mofificado: Paso atrás sin alertas ------------------
+        #h.set_piece_deadline(piece_set[i][0],10000,lt.deadline_flags.alert_when_available)
+        h.set_piece_deadline(piece_set[i],10000)
 
     print "#### h.file_priorities() ## %s ##" % h.file_priorities()
     print "#### h.piece_priorities() ## %s ##" % h.piece_priorities()
@@ -191,19 +213,31 @@ def play(url, is_view=None):
     dp = xbmcgui.DialogProgress()
     dp.create('pelisalacarta-MCT')
 
+    # -- Añadido: Para log --------------------------------------
+    timer = time.time()
+
+    # -- Añadido: Local con el número de piezas por cluster -----
+    #-- global                                                  -
+    _cluster_pieces = __pieces__
+
     # -- Doble bucle anidado ------------------------------------
     # -- Descarga - Primer bucle                                -
     while not h.is_seed():
         s = h.status()
-        #Actualizar piezas en caso de reanudación del torrent
+        #-- Eliminado: Paso atrás sin alertas -------------------
+        '''
         if s.is_finished == True : update_piece(h, piece_set)
         alert = ses.pop_alert()
         while alert is not None:
             alert_type = type(alert).__name__
+            #Comprueba si la alerta proviene del deadline y si ya ha terminado de descargar
+			#todas las piezas con prioridad distinta de 0
             if (alert_type == 'read_piece_alert') & (s.is_finished) == True:
                 update_piece(h, piece_set)
                 alert = ses.pop_alert()
             else: break
+        '''
+        xbmc.sleep(100)
 
         # -- Recuperar los datos del progreso -------------------
         message, porcent, msg_file, s, download = getProgress(h, video_file, video_size)
@@ -213,6 +247,43 @@ def play(url, is_view=None):
         # -- descargados para el diálogo de 'remove_files'      -
         if s.state == 1: download = 1
 
+        # -- Añadido: Log para las pruebas ----------------------
+        # -- Print log have_piece. Procedimiento al final del   -
+        # -- archivo                                            -
+        timer2 = time.time() - timer
+        if timer2 > 10:
+            print_have_piece_set(h, piece_set)
+            timer = time.time()
+
+            # -- Print log y procedimiento incrementar cluster --
+            # -- Parte 1                                        -
+            print "##### TESTEO CLUSTER Antes de la reproducción #####"
+            tt = time.time()
+            _cluster = True
+            print "##### range( %s, %s )" % ( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] )
+            for i in range( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] ):
+                print "##### h.have_piece(%s) ## %s ##" % ( i, h.have_piece(i) )
+                _cluster&= h.have_piece(i)
+            # -- Parte 2                                        -
+            print "##### _cluster ## %s ##" % _cluster
+            if _cluster:
+                _cluster_pieces+= __pieces__
+                if _cluster_pieces > len(piece_set) - 1:
+                    _cluster_pieces+= len(piece_set) - 1
+                print "##### _cluster_pieces ## %s ##" % _cluster_pieces
+                print "##### range( %s, %s )" % ( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] )
+                for i in range( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] ):
+                    print "##### h.set_piece_deadline( %s, 10000 ) #####" % i
+                    h.set_piece_deadline( i, 10000)
+            print "#####----------------------------------------------"
+            print "##### D. Proceso: %s" % (time.time() - tt)
+            print "###################################################"
+        # -- NOTA: En caso de que gustara el procedimiento se   -
+        # -- sacaría del 'if timer2 > 10:' y se le quitaría las -
+        # -- líneas para el log y se colocarían en una función  -
+        # -- si quisieramos conserbarlo                         -
+        # -------------------------------------------------------
+
         '''
         # -- Estimar cuando se comenzará el visionado -----------
         # -- Pruebas: Porcentaje fijo ---------------------------
@@ -220,8 +291,8 @@ def play(url, is_view=None):
         '''
 
         # -- Estimar cuando se comenzará el visionado -----------
-        # -- Pruebas: Porcentaje segun tamaño cuando sólo hay un -
-        # -- vídeo en torrent                                    -
+        # -- Pruebas: Porcentaje segun tamaño cuando sólo hay   -
+        # -- un vídeo en torrent                                -
         default_porcent_to_play = 0.50
         if video_size >  1000000000: default_porcent_to_play = 0.50
         if video_size >  1500000000: default_porcent_to_play = 0.60
@@ -231,15 +302,61 @@ def play(url, is_view=None):
         if video_size > 15000000000: default_porcent_to_play = 0.175
         if video_size > 20000000000: default_porcent_to_play = 0.125
         porcentage_to_play = (video_size/(video_size * 0.4)) * default_porcent_to_play
+        # -- NOTA: todo este bloque podría ir por encima del    -
+        # -- 'while not h.is_seed():', no necesita ser releido  -
+        # -- a cada paso                                        -
+        # -------------------------------------------------------
 
         # -- Player - play --------------------------------------
         option_view = ( (s.progress * 100) >= porcentage_to_play )
-        if (option_view and is_view != "Ok" and s.state == 3):
+
+        # -- Modificado: Se tendrá en cuenta el primer cluster --
+        # -- completado para el inicio de la reproducción       -
+        #if (option_view and is_view != "Ok" and s.state == 3):
+        if (option_view and is_view != "Ok" and s.state == 3 and _cluster ):
             print "##### porcentage_to_play ## %s ##" % porcentage_to_play
+
+            # -- Añadido: Log para las pruebas ------------------
+            # -- Print log have_piece. Procedimiento al final   -
+            # -- del archivo                                    -
+            print_have_piece_set(h, piece_set)
+
+            # -- Print log y procedimiento incrementar cluster --
+            timer2 = time.time() - timer
+            if timer2 > 10:
+                # -- Parte 1                                    -
+                print "##### TESTEO CLUSTER pre reproducción #####"
+                tt = time.time()
+                _cluster = True
+                print "##### range( %s, %s )" % ( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] )
+                for i in range( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] ):
+                    print "##### h.have_piece(%s) ## %s ##" % ( i, h.have_piece(i) )
+                    _cluster&= h.have_piece(i)
+                # -- Parte 2                                    -
+                print "##### _cluster ## %s ##" % _cluster
+                if _cluster:
+                    _cluster_pieces+= __pieces__
+                    if _cluster_pieces > len(piece_set) - 1:
+                        _cluster_pieces+= len(piece_set) - 1
+                    print "##### _cluster_pieces ## %s ##" % _cluster_pieces
+                    print "##### range( %s, %s )" % ( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] )
+                    for i in range( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] ):
+                        print "##### h.set_piece_deadline( %s, 10000 ) #####" % i
+                        h.set_piece_deadline( i, 10000)
+                print "#####-----------------------------------------"
+                print "##### D. Proceso: %s" % (time.time() - tt)
+                print "##############################################"
+                timer = time.time()
+            # -- NOTA: En caso de que gustara el procedimiento  -
+            # -- se sacaría del 'if timer2 > 10:' y se le       -
+            # -- quitaría las líneas para el log y se           -
+            # -- colocarían en una función si quisieramos       -
+            # -- conserbarlo                                    -
+            # ---------------------------------------------------
+
             is_view = "Ok"
             dp.close()
-			#Colocar las restantes piezas a 1 antes de comenzar la reproduccion
-            update_piece(h, piece_set)
+
             # -- Player - Ver el vídeo --------------------------
             player = play_video()
             player.play( os.path.join( save_path_videos, video_file ) )
@@ -247,6 +364,48 @@ def play(url, is_view=None):
             # -- Segundo bucle - Player - Control de eventos ----
             while player.isPlaying():
                 xbmc.sleep(100)
+
+                # -- Añadido: Log para las pruebas --------------
+                # -- Print log have_piece. Procedimiento al     -
+                # -- final del archivo                          -
+                timer2 = time.time() - timer
+                if timer2 > 10:
+                    print_have_piece_set(h, piece_set)
+                    timer = time.time()
+
+                    # -- Print log y procedimiento incrementar --
+                    # -- cluster                                -
+                    # -- Parte 1                                -
+                    print "##### TESTEO CLUSTER reproducción #####"
+                    print "### TESTEO CLUSTER 2 #########################"
+                    tt = time.time()
+                    _cluster = True
+                    print "##### range( %s, %s )" % ( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] )
+                    for i in range( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] ):
+                        print "##### h.have_piece(%s) ## %s: %s ##" % ( i, h.have_piece(i), bool( h.have_piece(i) ) )
+                        _cluster&= bool( h.have_piece(i) )
+                    # -- Parte 2                                -
+                    print "##### _cluster ## %s ##" % _cluster
+                    if _cluster:
+                        _cluster_pieces+= __pieces__
+                        if _cluster_pieces > len(piece_set) - 1:
+                            _cluster_pieces+= len(piece_set) - 1
+                        print "##### _cluster_pieces ## %s ##" % _cluster_pieces
+                        print "##### range( %s, %s )" % ( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] )
+                        for i in range( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] ):
+                            print "##### h.set_piece_deadline( %s, 10000 ) #####" % i
+                            h.set_piece_deadline( i, 10000)
+                    print "#####-----------------------------------------"
+                    print "##### D. Proceso: %s" % (time.time() - tt)
+                    print "##############################################"
+                    timer = time.time()
+                    # -- NOTA: En caso de que gustara el        -
+                    # -- procedimiento se sacaría del           -
+                    # -- 'if timer2 > 10:' y se le quitaría las -
+                    # -- líneas para el log y se colocarían en  -
+                    # -- una función si quisieramos conserbarlo -
+                    # -------------------------------------------
+                # -----------------------------------------------
 
                 # -- Cerrar el diálogo de progreso --------------
                 if player.resumed:
@@ -274,10 +433,10 @@ def play(url, is_view=None):
                         dp.close()
                         player.pause()
 
-                    # -- El usuario cancelo el visionado ------------
-                    # -- Terminar                                   -
+                    # -- El usuario cancelo el visionado --------
+                    # -- Terminar                               -
                     if player.ended:
-                        # -- Diálogo eliminar archivos --------------------------
+                        # -- Diálogo eliminar archivos ----------
                         remove_files( download, torrent_file, video_file, ses, h )
                         return
 
@@ -327,21 +486,21 @@ def getProgress(h, video_file, video_size=0):
     state_str = ['queued', 'checking', 'downloading metadata', \
         'downloading', 'finished', 'seeding', 'allocating', 'checking fastresume']
 
-    if "/" in video_file: video_file = video_file.split("/")[1]
     if video_size != 0:
         porcent = int( (float(s.total_done)/video_size) * 100 )
         download = ( (float(s.total_done)/video_size) * 100 )
         message = '%.2f%% d:%.1f kb/s u:%.1f kB/s p:%d s:%d %s' % \
             ((float(s.total_done)/video_size) * 100, s.download_rate / 1000, s.upload_rate / 1000, \
             s.num_peers, s.num_seeds, state_str[s.state])
-        msg_file = "..../"+video_file + " (%.2f)" % (video_size/1048576.0)
     else:
         porcent = int( s.progress * 100 )
         download = ( s.progress * 100 )
         message = '%.2f%% d:%.1f kb/s u:%.1f kB/s p:%d s:%d %s' % \
             (s.progress * 100, s.download_rate / 1000, s.upload_rate / 1000, \
             s.num_peers, s.num_seeds, state_str[s.state])
-        msg_file = "..../"+video_file + " (%.2f)" % (s.total_wanted/1048576.0)
+
+    if "/" in video_file: video_file = video_file.split("/")[1]
+    msg_file = "..../"+video_file + " (%.2f)" % (s.total_wanted/1048576.0)
 
     return (message, porcent, msg_file, s, download)
 
@@ -352,9 +511,7 @@ class play_video(xbmc.Player):
         self.paused = False
         self.resumed = True
         self.statusDialogoProgress = False
-        #self.started = False
         self.ended = False
-        #self.stopped = False
 
     def onPlayBackPaused(self):
         self.paused = True
@@ -504,10 +661,28 @@ def url_get(url, params={}, headers={}):
     except urllib2.HTTPError:
         return None
 
+# -- Eliminado: Paso atrás sin alertas ---------------------
 def update_piece(h, piece_set):
+    count = 0
     for i, _set in enumerate(piece_set):
-        prioridad = h.piece_priority(piece_set[_set])
-        if (prioridad == 0) :
-            h.piece_priority(piece_set[_set],1)
-            h.set_sequential_download(True)
-    return
+        #if (_set[1] == 0) & (count < 5):
+        if (h.piece_priority(i) == 0) & (count < __pieces__):
+            h.set_piece_deadline(i,10000,lt.deadline_flags.alert_when_available)
+            print "#### h.piece_priorities() 2 ## %s ##" % h.piece_priorities()
+            count += 1
+        elif count == __pieces__: return
+
+# -- Añadido: Procedimiento para log de have_piece en las --
+# -- pruebas                                               -
+def print_have_piece_set(h, piece_set):
+    c = 0
+    _print = "%s piezas descargadas\n" % h.status().num_pieces
+    for i, _set in enumerate(piece_set):
+        if h.have_piece(_set):
+            _print+= "[%s]" % str(_set).zfill(5)
+        else: _print+= "[XXXXX]"
+        c+= 1
+        if c == 20:
+            c = 0
+            _print+= "\n"
+    print _print
