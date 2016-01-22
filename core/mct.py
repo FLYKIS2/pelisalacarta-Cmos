@@ -269,7 +269,7 @@ def play(url, is_view=None):
             if _cluster:
                 _cluster_pieces+= __pieces__
                 if _cluster_pieces > len(piece_set) - 1:
-                    _cluster_pieces+= len(piece_set) - 1
+                    _cluster_pieces = len(piece_set) - 1
                 print "##### _cluster_pieces ## %s ##" % _cluster_pieces
                 print "##### range( %s, %s )" % ( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] )
                 for i in range( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] ):
@@ -337,7 +337,7 @@ def play(url, is_view=None):
                 if _cluster:
                     _cluster_pieces+= __pieces__
                     if _cluster_pieces > len(piece_set) - 1:
-                        _cluster_pieces+= len(piece_set) - 1
+                        _cluster_pieces = len(piece_set) - 1
                     print "##### _cluster_pieces ## %s ##" % _cluster_pieces
                     print "##### range( %s, %s )" % ( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] )
                     for i in range( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] ):
@@ -389,7 +389,7 @@ def play(url, is_view=None):
                     if _cluster:
                         _cluster_pieces+= __pieces__
                         if _cluster_pieces > len(piece_set) - 1:
-                            _cluster_pieces+= len(piece_set) - 1
+                            _cluster_pieces = len(piece_set) - 1
                         print "##### _cluster_pieces ## %s ##" % _cluster_pieces
                         print "##### range( %s, %s )" % ( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] )
                         for i in range( piece_set[_cluster_pieces - __pieces__], piece_set[_cluster_pieces] ):
@@ -662,6 +662,7 @@ def url_get(url, params={}, headers={}):
         return None
 
 # -- Eliminado: Paso atrás sin alertas ---------------------
+        '''
 def update_piece(h, piece_set):
     count = 0
     for i, _set in enumerate(piece_set):
@@ -671,7 +672,7 @@ def update_piece(h, piece_set):
             print "#### h.piece_priorities() 2 ## %s ##" % h.piece_priorities()
             count += 1
         elif count == __pieces__: return
-
+        '''
 # -- Añadido: Procedimiento para log de have_piece en las --
 # -- pruebas                                               -
 def print_have_piece_set(h, piece_set):
