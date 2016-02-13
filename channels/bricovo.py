@@ -25,8 +25,8 @@ def isGeneric():
 def mainlist(item):
     logger.info("pelisalacarta.channels.bricovo mainlist")
     itemlist = []
-    itemlist.append(Item(channel=__channel__, title="Películas" , action="lista", url="http://www.bricovo.com/?s=alphabet:all", thumbnail= "http://i.imgur.com/aWCDWtn.png", fanart="http://i.imgur.com/c3HS8kj.png"))
-    itemlist.append(Item(channel=__channel__, title="Series"      , action="entradas", url="http://www.bricovo.com/?s=temporada", thumbnail= "http://i.imgur.com/aWCDWtn.png", fanart="http://i.imgur.com/9loVksV.png"))
+    itemlist.append(Item(channel=__channel__, title="Películas" , action="lista", url="http://www.bricovo.com/?s=alphabet:all"))
+    itemlist.append(Item(channel=__channel__, title="Series"      , action="entradas", url="http://www.bricovo.com/?s=temporada"))
     itemlist.append(Item(channel=__channel__, title="Buscar..."      , action="search", thumbnail= "http://i.imgur.com/aWCDWtn.png", extra="Buscar"))
     return itemlist
 
@@ -38,7 +38,7 @@ def search(item, texto):
     else:
         itemlist = busqueda(item)
     if len(itemlist) == 0:
-        itemlist.append(Item(channel=__channel__, title="[COLOR sandybrown][B]Búsqueda sin resultado[/B][/COLOR]" , thumbnail= "http://i.imgur.com/aWCDWtn.png"))
+        itemlist.append(Item(channel=__channel__, title="[COLOR sandybrown][B]Búsqueda sin resultado[/B][/COLOR]"))
     return itemlist
 
 def busqueda(item):
@@ -66,10 +66,10 @@ def busqueda(item):
 def lista(item):
     logger.info("pelisalacarta.channels.bricovo lista")
     itemlist = []
-    itemlist.append( Item(channel=__channel__, title="Estrenos"      , action="entradas"    , url="http://www.bricovo.com/c/estrenos/", thumbnail= item.thumbnail, fanart=item.fanart))
-    itemlist.append( Item(channel=__channel__, title="DVDRip"       , action="entradas"    , url="http://www.bricovo.com/c/dvdrip/", thumbnail= item.thumbnail, fanart=item.fanart))
-    itemlist.append( Item(channel=__channel__, title="HD/Micro HD"         , action="entradas"    , url="http://www.bricovo.com/c/hd/", thumbnail= item.thumbnail, fanart=item.fanart))
-    itemlist.append( Item(channel=__channel__, title="BluRay Rip", action="entradas"    , url="http://www.bricovo.com/c/bluray-rip/", thumbnail= item.thumbnail, fanart=item.fanart))
+    itemlist.append( Item(channel=__channel__, title="Estrenos"      , action="entradas"    , url="http://www.bricovo.com/c/estrenos/"))
+    itemlist.append( Item(channel=__channel__, title="DVDRip"       , action="entradas"    , url="http://www.bricovo.com/c/dvdrip/"))
+    itemlist.append( Item(channel=__channel__, title="HD/Micro HD"         , action="entradas"    , url="http://www.bricovo.com/c/hd/"))
+    itemlist.append( Item(channel=__channel__, title="BluRay Rip", action="entradas"    , url="http://www.bricovo.com/c/bluray-rip/"))
     return itemlist
 
 def entradas(item):
