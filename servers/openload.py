@@ -118,7 +118,7 @@ def find_videos(text):
 #Thanks to samsamsam for his work
 def decodeopenload(data):
     import base64, math
-    from png import Reader as PNGReader
+    from lib.png import Reader as PNGReader
     # get image data
     imageData = scrapertools.find_single_match(data, '<img *id="linkimg" *src="([^"]+)"')
 
