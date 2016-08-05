@@ -32,7 +32,7 @@ def get_video_url(page_url, premium=False, user="", password="", video_password=
 
     data = scrapertools.downloadpageWithoutCookies(page_url)
     subtitle = scrapertools.find_single_match(data, '<track kind="captions" src="([^"]+)" srclang="es"')
-    # #Header para la descarga
+    #Header para la descarga
     header_down = "|User-Agent="+headers['User-Agent']+"|"
 
     try:
@@ -96,7 +96,7 @@ def find_videos(text):
     encontrados = set()
     devuelve = []
 
-    patronvideos = '//(?:www.)?openload.../(?:embed|f)/([0-9a-zA-Z-_]+)'
+    patronvideos = '(?:openload|oload).../(?:embed|f)/([0-9a-zA-Z-_]+)'
     logger.info("pelisalacarta.servers.openload find_videos #" + patronvideos + "#")
 
     matches = re.compile(patronvideos, re.DOTALL).findall(text)
@@ -149,7 +149,11 @@ def decodeopenload(data):
         imageTabs[i][j].append(imageStr[idx])
 
     # get signature data
-    data = scrapertools.downloadpageWithoutCookies('https://openload.co/assets/js/obfuscator/numbers.js')
+    scripts = scrapertools.find_multiple_matches(data, '<script src="(/assets/js/obfuscator/[^"]+)"')
+    for scr in scripts:
+        data = scrapertools.downloadpageWithoutCookies('https://openload.co%s' % scr)
+        if "signatureNumbers" in data:
+            break
     signStr = scrapertools.find_single_match(data, '[\'"]([^"\']+)[\'"]')
 
     # split signature data
