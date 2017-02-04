@@ -21,7 +21,6 @@ from core import httptools
 
 
 host = "http://hdfull.tv"
-headers = [["user-agent", "Mozilla/5.0"]]
 
 if config.get_setting('hdfulluser', 'hdfull'):
     account = True
@@ -758,7 +757,8 @@ def get_headers():
     cookiedata = filetools.read(cookie)
     
     cfduid = scrapertools.find_single_match(cookiedata, "hdfull.*?__cfduid\s+([A-Za-z0-9\+\=]+)")
-    headers_append = "|User-Agent=%s&Cookie=__cfduid=%s" % (headers[0][1], cfduid)
+    headers_append = "|User-Agent=Mozilla/5.0 (Windows NT 10.0; WOW64; rv:50.0) Gecko/20100101 Firefox/50.0" \
+                     "&Cookie=__cfduid=%s" % cfduid
     cf_clearance = scrapertools.find_single_match(cookiedata, "hdfull.*?cf_clearance\s+([A-Za-z0-9\+\=\-]+)")
     if cf_clearance:
         headers_append += "; cf_clearance=" + cf_clearance
